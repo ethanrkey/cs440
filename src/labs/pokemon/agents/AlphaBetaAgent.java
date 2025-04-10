@@ -46,6 +46,33 @@ public class AlphaBetaAgent
          */
         public static List<Node> order(List<Node> children)
         {
+            if (children.isEmpty()) return children;
+
+            int currentPlayer = children.get(0).getCurrentPlayerTeamIdx();
+            int myTeam = children.get(0).getMyTeamIdx();
+            boolean isMax = (currentPlayer == myTeam);
+        
+            Node bestNode = children.get(0);
+            Node worstNode = children.get(0);
+        
+            for (Node child : children) {
+                if (child.getUtilityValue() > bestNode.getUtilityValue()) {
+                    bestNode = child;
+                }
+                if (child.getUtilityValue() < worstNode.getUtilityValue()) {
+                    worstNode = child;
+                }
+            }
+        
+            // Instead of sorting, we just move the best/worst to the front
+            if (isMax) {
+                children.remove(bestNode);
+                children.add(0, bestNode); // Move best move to front for MAX
+            } else {
+                children.remove(worstNode);
+                children.add(0, worstNode); // Move worst move to front for MIN
+            }
+        
             return children;
         }
 
@@ -94,8 +121,45 @@ public class AlphaBetaAgent
                                     double alpha,
                                     double beta)
 		{
-			Node bestChild = null;
-			return bestChild;
+            if (node.isTerminal() || node.getDepth() >= maxDepth) {
+                return node; // Return terminal node or max depth node
+            }
+        
+            List<Node> children = MoveOrderer.order(node.getChildren()); // Apply move ordering
+            Node bestChild = null;
+        
+            boolean isMax = (node.getCurrentPlayerTeamIdx() == node.getMyTeamIdx());
+            double bestValue = isMax ? Double.NEGATIVE_INFINITY : Double.POSITIVE_INFINITY;
+        
+            for (Node child : children) {
+                Node result = normalAlphaBeta(child, alpha, beta);
+        
+                if (isMax) { // MAX player
+                    if (result.getUtilityValue() > bestValue) {
+                        bestValue = result.getUtilityValue();
+                        bestChild = child;
+                    }
+                    alpha = Math.max(alpha, bestValue);
+                } else { // MIN player
+                    if (result.getUtilityValue() < bestValue) {
+                        bestValue = result.getUtilityValue();
+                        bestChild = child;
+                    }
+                    beta = Math.min(beta, bestValue);
+                }
+        
+                // Prune if possible
+                if (alpha >= beta) {
+                    break;
+                }
+            }
+        
+            if (bestChild == null) {
+                bestChild = children.get(0); // Fallback: Return first child if pruning removed all others
+            }
+        
+            bestChild.setUtilityValue(bestValue); // Ensure correct utility is stored
+            return bestChild;
 		}
 
 		public Node minimaxFirstLayerWhenImNotRoot(Node node,
