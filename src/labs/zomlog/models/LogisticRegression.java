@@ -258,14 +258,16 @@ public class LogisticRegression
      * @return Pair<Matrix, Matrix> The derivatives (dLoss/dw, dLoss/db) as a pair in this order.
      */
     public Pair<Matrix, Matrix> backwards(Matrix X, Matrix dLoss_dPrediction) throws Exception
-    {
-        Matrix dLoss_dw = Matrix.zeros_like(this.getW());
-        Matrix dLoss_db = Matrix.zeros_like(this.getB());
+{
+    Matrix Z = X.matmul(this.getW()).add(this.getB());
+    Matrix dLoss_dZ = this.getSigmoid().backwards(Z, dLoss_dPrediction);
 
-        // TODO: complete me!
+    Matrix dLoss_dw = X.transpose().matmul(dLoss_dZ);
+    Matrix dLoss_db = dLoss_dZ.sum(0);
 
-        return new Pair<Matrix, Matrix>(dLoss_dw, dLoss_db);
-    }
+    return new Pair<>(dLoss_dw, dLoss_db);
+}
+
 
     public void fit(Matrix X, Matrix y_gt)
     {
@@ -307,24 +309,21 @@ public class LogisticRegression
     }
 
     public int predict(Matrix x)
+{
+    double zombieProb = 0.0;
+
+    try
     {
-        double zombieProb = 0.0;
-
-        try
-        {
-            zombieProb = this.forward(x).item();
-        } catch(Exception e)
-        {
-            e.printStackTrace();
-            System.exit(1);
-        }
-
-        // System.out.println("LogisticRegression.predict: x=" + x + "\tzombieProb=" + zombieProb);
-
-        // TODO complete me!
-        // default: always predict a human
-        return 0;
+        zombieProb = this.forward(x).item();
+    } catch(Exception e)
+    {
+        e.printStackTrace();
+        System.exit(1);
     }
+
+    return zombieProb >= 0.5 ? 1 : 0;
+}
+
 
 }
 
