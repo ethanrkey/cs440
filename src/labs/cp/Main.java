@@ -88,19 +88,44 @@ public class Main
     }
 
 
-    public static void train(Game game,         // world
-                             Model qFunction,   // neural network
-                             ReplayBuffer rb,   // replay buffer (to populate)
-                             Namespace ns)      // namespace of command line arguments
+    public static void train(Game game,
+                         Model qFunction,
+                         ReplayBuffer rb,
+                         Namespace ns)
+{
+    long numTrainingGames = ns.get("numTrainingGames");
+
+    for (int gameIdx = 0; gameIdx < numTrainingGames; ++gameIdx)
     {
-        long numTrainingGames = ns.get("numTrainingGames");
-        for(int gameIdx = 0; gameIdx < numTrainingGames; ++gameIdx)
+        Matrix state = game.reset();
+        boolean isDone = false;
+
+        while (!isDone)
         {
-            // TODO: complete me!
-            // play a bunch of training games where you are not allowed to update the neural network
-            // make sure to add transitions that you observe to the replay buffer, including the terminal transition!
+            try {
+                Matrix qValues = qFunction.forward(state);
+                int action = argmax(qValues);
+
+                Triple<Matrix, Double, Boolean> result = game.step(action);
+                Matrix nextState = result.getFirst();
+                double reward = result.getSecond();
+                isDone = result.getThird();
+
+                if (isDone) {
+                    rb.addSample(state, reward, null);
+                } else {
+                    rb.addSample(state, reward, nextState);
+                }
+
+                state = nextState;
+            } catch (Exception e) {
+                e.printStackTrace();
+                System.exit(-1);
+            }
         }
     }
+}
+
 
     public static void update(Model qFunction,      // neural network
                               Optimizer opt,        // SGD or Adam in this implementation
